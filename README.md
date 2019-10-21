@@ -6,3 +6,6 @@ To run:
 2) download/clone the code
 3) change directory to where you saved the code
 4) run "streamlit run [NAME OF YOUR DOCUMENT]
+
+
+working on adding a trade feature.
