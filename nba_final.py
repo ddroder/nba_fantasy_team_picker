@@ -127,15 +127,6 @@ trading_df = players_to_recieve_df.append(players_to_trade_df)
 st.write(arranged['PTS'][0] > arranged['PTS'][5])
 st.write(trading_df['scalar_evaluation_value'][0] > trading_df['scalar_evaluation_value'][1])
 
-# intialise data of lists.
-data = {'Name':['Tom', 'nick', 'krish', 'jack'],
-        'Age':[20, 21, 19, 18]}
-data2 = {'Name':['Tom', 'nick', 'krish', 'jack'],
-        'Age':[21, 22, 20, 19]}
-# Create DataFrame
-df = pd.DataFrame(data)
-df2 = pd.DataFrame(data2)
-df['Age'][0] > df2['Age'][1] 
 
 
 
