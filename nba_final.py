@@ -1,13 +1,12 @@
-# -*- coding: utf-8 -*-
 from urllib.request import urlopen
 from bs4 import BeautifulSoup
 import pandas as pd
 import streamlit as st
 @st.cache
-def get_data():
+def get_basketball_data():
     # NBA season we will be analyzing
     year = 2019
-    # URL page we will scraping (see image above)
+    # URL page we will scraping 
     url = "https://www.basketball-reference.com/leagues/NBA_{}_per_game.html".format(year)
     # this is the HTML from the given URL
     html = urlopen(url)
@@ -30,7 +29,69 @@ def get_data():
     stats.head(10)
     stats.dropna(inplace = True)
     return stats
-def fantasy_points(dataframe):
+@st.cache
+def get_football_data():
+    # NFL season we will be analyzing
+    year = 2019
+    # URL page we will scraping 
+    url = "https://www.pro-football-reference.com/years/{}/fantasy.htm".format(year)
+    # this is the HTML from the given URL
+    html = urlopen(url)
+    soup = BeautifulSoup(html, features='html.parser')
+
+    # use findALL() to get the column headers
+    soup.findAll('tr', limit=2)
+    # use getText()to extract the text we need into a list
+    headers = [th.getText() for th in soup.findAll('tr', limit=2)[1].findAll('th')]
+    # exclude the first column as we will not need the ranking order from Football Reference for the analysis
+    headers = headers[1:]
+    headers
+
+    # avoid the first header row
+    rows = soup.findAll('tr')[1:]
+    player_stats = [[td.getText() for td in rows[i].findAll('td')]
+                for i in range(len(rows))]
+
+    stats = pd.DataFrame(player_stats, columns = headers)
+    stats.head(10)
+    stats.dropna(inplace = True)
+    return stats
+def football_fantasy_points(dataframe):
+    dataframe["YDS"] = pd.to_numeric(dataframe['YDS'])
+
+def testing_button_predict_winner():
+    if st.button("Compare 2 teams to predict who will win?"):
+        your_team_points_estimate = main_users_team_df['fantasy_points'].sum()
+        challenger_team_points_estimate = other_users_team_df['fantasy_points'].sum()
+        st.header("Your points projection with this team lineup")
+        st.write(your_team_points_estimate)
+        st.header("Challenger points projection with their team lineup")
+        st.write(challenger_team_points_estimate)
+        pts_for_users_team = main_users_team_df['scalar_evaluation_value'].sum()
+        pts_for_challenger_team= other_users_team_df['scalar_evaluation_value'].sum()
+        if your_team_points_estimate < challenger_team_points_estimate:
+            st.header("=(")
+            st.header("You are likely going to lose this matchup!")
+        if  your_team_points_estimate > challenger_team_points_estimate:
+            st.header("You are likely going to win this matchup!")
+            st.balloons()
+        if your_team_points_estimate == challenger_team_points_estimate:
+            st.header("Eh,")
+            st.header("this is going to be a tie!")
+def compare_trade():
+    if st.button("Compare your trade?"):
+        st.write("your total evaluation")
+        st.write(pts_for_give)
+        st.write("other persons total evaluation")
+        st.write(pts_for_recieve)
+        if (pts_for_give - pts_for_recieve) == 0:
+            st.header("this is an even trade")
+        if (pts_for_give - pts_for_recieve) < 0:
+            st.header("this is a favorable trade")
+            st.balloons()
+        if(pts_for_give - pts_for_recieve) > 0:
+            st.header("this is an unfavorable trade")
+def basketball_fantasy_points(dataframe):
   print(dataframe.head())
   dataframe = dataframe.dropna()
   dataframe['PTS'] = pd.to_numeric(dataframe['PTS'])
@@ -53,84 +114,139 @@ def fantasy_points(dataframe):
   dataframe['weighted_value'] = abs((dataframe['G']/dataframe['fantasy_points']) - 1)
   dataframe['total_points_count'] = dataframe['G'] * dataframe['fantasy_points']
   return dataframe
-fp_stats = fantasy_points(get_data())
-#fp_stats_more_than_15 = fp_stats.loc[fp_stats['G'] > 50]
-arranged = fp_stats.sort_values(by = ['fantasy_points'], ascending = False)
-
-#players_to_trade = st.sidebar.multiselect('Enter players to trade',arranged['Player'])
-#players_to_recieve = st.sidebar.multiselect('Enter players you will recieve',arranged['Player'])
-
-
-players_to_trade = st.sidebar.text_input('Enter a player you want to trade')
-players_to_recieve = st.sidebar.text_input('Enter a player that you would recieve for the trade')
-
-games_slider=st.sidebar.slider('games played', 0,82,30)
-filtered_arranged = arranged[arranged['G'] >= games_slider]
-
-#position = st.text_input('Enter Position abbrev.SG, PF, PG, C, SF, PF-SF, SF-SG, SG-PF, C-PF, SG-SF, PF-C')
-#filtered_arranged = filtered_arranged.loc[filtered_arranged['Pos'] == position]
-#st.write(filtered_arranged[['Player','G','Pos','Tm','fantasy_points']])
-
-
-positions = st.sidebar.multiselect('select position', arranged['Pos'].unique())
-player_to_drop = st.sidebar.multiselect('Enter name of player to drop',arranged['Player'])
-#st.write(type(player_to_drop))
-
-filtered_arranged2 = arranged[(arranged['Pos'].isin(positions)) & (arranged['G'] >= games_slider)]
-fun_total_percent = filtered_arranged2['total_points_count'].sum()
-filtered_arranged2['scalar_evaluation_value'] = filtered_arranged2['total_points_count'] / fun_total_percent
-#player_to_drop = st.sidebar.multiselect('Enter name of player to drop',filtered_arranged2['Player'])
-#filtered_arranged2 = filtered_arranged2[~filtered_arranged2['Player'].isin(player_to_drop)]
-#filtered_arranged2 = filtered_arranged2[filtered_arranged2.Player != player_to_drop]
-st.write(fun_total_percent)
-st.write(filtered_arranged2[['Player','G','Pos','Tm','fantasy_points','scalar_evaluation_value']])
-
-
-#top_10_in_position = filtered_arranged2.sort_values(by =['total_points_count'], ascending = False)
-#if st.checkbox('Show Top 10 in positions selected'):
-#    st.write(top_10_in_position[['Player','Pos','total_points_count']].head(n=10))
-#new_df = df[(df['Club'].isin(clubs)) & (df['Nationality'].isin(nationalities))]
-#st.write(new_df)
-fp_stats['Pos'].unique()
-test = 3
-st.write("importance of position")
-new_data = arranged.groupby(by = "Pos")['fantasy_points'].mean()
-new_data = new_data.to_frame()
-new_data.reset_index(inplace = True)
-st.write(new_data)
-#new_data.iloc[[0,2,5,6,8]]
-# library & dataset
-#import seaborn as sns
-#import numpy as np
-# Make boxplot for one group only
-#plot = sns.barplot( y=new_data['fantasy_points'], x = new_data['Pos'])
-#sns.plt.show()
-#st.write(plot)
-#sns.plt.show()
-"""
-drop_test = filtered_arranged
-drop_test2 = drop_test[~drop_test['Player'].isin(player_to_drop)]
-st.write(drop_test2)
-len(arranged)
-"""
-
-players_to_trade_df = filtered_arranged2[filtered_arranged2['Player'] == (players_to_trade)]
-st.write("this is players_to_trade_df")
-st.write(players_to_trade_df[['Player','G','Pos','Tm','fantasy_points','scalar_evaluation_value']])
-
-players_to_recieve_df = filtered_arranged2[filtered_arranged2['Player'] == (players_to_recieve)]
-st.write("this is players to be received")
-st.write(players_to_recieve_df[['Player','G','Pos','Tm','fantasy_points','scalar_evaluation_value']])
-
-trading_df = players_to_recieve_df.append(players_to_trade_df)
-
-st.write(arranged['PTS'][0] > arranged['PTS'][5])
-st.write(trading_df['scalar_evaluation_value'][0] > trading_df['scalar_evaluation_value'][1])
 
 
 
+sport = st.sidebar.radio('What sport would you like to analyze?',('Basketball','Football','Golf'))
+
+if sport == "Basketball":
+    games_slider=st.sidebar.slider('games played', 0,82,30)
+    fp_stats = basketball_fantasy_points(get_basketball_data())
+    arranged = fp_stats.sort_values(by = ['fantasy_points'], ascending = False)
+    filtered_arranged = arranged[arranged['G'] >= games_slider]
 
 
 
+    positions = st.sidebar.multiselect('select position', arranged['Pos'].unique())
 
 
+    filtered_arranged2 = arranged[(arranged['Pos'].isin(positions)) & (arranged['G'] >= games_slider)]
+    fun_total_percent = filtered_arranged2['total_points_count'].sum()
+    filtered_arranged2['scalar_evaluation_value'] = filtered_arranged2['total_points_count'] / fun_total_percent
+
+    st.write(fun_total_percent)
+    st.write(filtered_arranged2[['Player','G','Pos','Tm','fantasy_points','scalar_evaluation_value']])
+
+    fp_stats['Pos'].unique()
+    if st.button("Check importance of each position?"):
+        st.write("importance of position")
+        new_data = arranged.groupby(by = "Pos")['fantasy_points'].mean()
+        new_data = new_data.to_frame()
+        new_data.reset_index(inplace = True)
+        st.write(new_data)
+
+    players_to_trade = st.sidebar.multiselect('Which players are you going to trade?', filtered_arranged2['Player'].unique())
+    players_to_recieve= st.sidebar.multiselect('Which players are you going to recieve?', filtered_arranged2['Player'].unique())
+
+    players_to_trade_df = filtered_arranged2[filtered_arranged2['Player'].isin(players_to_trade)]
+    players_to_recieve_df = filtered_arranged2[filtered_arranged2['Player'].isin(players_to_recieve)]
+    new_df = filtered_arranged2[(filtered_arranged2['Player'].isin(players_to_trade)) | (filtered_arranged2['Player'].isin(players_to_recieve))]
+
+
+    #st.write(new_df[['Player','G','Pos','Tm','fantasy_points','scalar_evaluation_value']])
+    pts_for_give = players_to_trade_df['scalar_evaluation_value'].sum()
+    pts_for_recieve = players_to_recieve_df['scalar_evaluation_value'].sum()
+
+
+
+    main_users_team = st.sidebar.multiselect("Please enter your team",filtered_arranged2['Player'].unique())
+    other_persons_team = st.sidebar.multiselect("Please enter the other players team (team you are comparing yours against)",filtered_arranged2['Player'].unique())
+    main_users_team_df = filtered_arranged2[filtered_arranged2['Player'].isin(main_users_team)]
+    other_users_team_df = filtered_arranged2[filtered_arranged2['Player'].isin(other_persons_team)]
+
+    compare_trade()
+    testing_button_predict_winner()
+   
+#individual_player = st.sidebar.multiselect("Enter a players stats to look at")
+
+#if st.button("individual players"):
+ #   selected_players =
+
+def football_compare_trade():
+    players_to_trade = st.sidebar.multiselect('Which players are you going to trade?', data_important['Player'].unique())
+    players_to_recieve= st.sidebar.multiselect('Which players are you going to recieve?', data_important['Player'].unique())
+    players_to_trade_df = data_important[data_important['Player'].isin(players_to_trade)]
+    players_to_recieve_df = data_important[data_important['Player'].isin(players_to_recieve)]
+    new_df = data_important[(data_important['Player'].isin(players_to_trade)) | (data_important['Player'].isin(players_to_recieve))]
+
+
+    #st.write(new_df[['Player','G','Pos','Tm','fantasy_points','scalar_evaluation_value']])
+    pts_for_give = players_to_trade_df['scalar_evaluation_value'].sum()
+    pts_for_recieve = players_to_recieve_df['scalar_evaluation_value'].sum()
+    if st.button("Compare your trade?"):
+        st.write("your total evaluation")
+        st.write(pts_for_give)
+        st.write("other persons total evaluation")
+        st.write(pts_for_recieve)
+        if (pts_for_give - pts_for_recieve) == 0:
+            st.header("this is an even trade")
+        if (pts_for_give - pts_for_recieve) < 0:
+            st.header("this is a favorable trade")
+            st.balloons()
+        if(pts_for_give - pts_for_recieve) > 0:
+            st.header("this is an unfavorable trade")
+
+def football_testing_button_predict_winner():
+    if st.button("Compare 2 teams to predict who will win?"):
+        your_team_points_estimate = main_users_team_df['total_points'].sum()
+        challenger_team_points_estimate = other_users_team_df['total_points'].sum()
+        st.header("Your points projection with this team lineup")
+        st.write(your_team_points_estimate)
+        st.header("Challenger points projection with their team lineup")
+        st.write(challenger_team_points_estimate)
+        pts_for_users_team = main_users_team_df['scalar_evaluation_value'].sum()
+        pts_for_challenger_team= other_users_team_df['scalar_evaluation_value'].sum()
+        if your_team_points_estimate < challenger_team_points_estimate:
+            st.header("=(")
+            st.header("You are likely going to lose this matchup!")
+        if  your_team_points_estimate > challenger_team_points_estimate:
+            st.header("You are likely going to win this matchup!")
+            st.balloons()
+        if your_team_points_estimate == challenger_team_points_estimate:
+            st.header("Eh,")
+            st.header("this is going to be a tie!")
+
+if sport == "Football":
+    data = get_football_data()
+    data.columns = ['Player','Team','Position','Age','Games','GS','Passes_Completed','Passes_attempted','Passing_Yards','Passing_Touchdowns','Interceptions_Thrown','Rushing_Attempts','Rushing_Yards_Gained','Rushing_Yards_attempted','Rushing_Touchdowns','Pass_Targets','Receptions','Recieving_Yards','Recieving_Yards_Per_Reception','Recieving_Touchdowns','Fumbles','Fumbles_By_Team','Touchdowns of every Type','2PM','2PP','Fantasy_Points','PPR','DKPt','FDPT','VBD','PosRank','PosOverall']
+    data_important = data[['Player','Position','Team','Passing_Yards','Games','Passing_Touchdowns','Interceptions_Thrown','Rushing_Yards_Gained','Rushing_Touchdowns','Receptions','Recieving_Yards','Recieving_Touchdowns']]
+    st.write("just made first data_important")
+    #cast numeric data as numeric
+    data_important[['Passing_Yards','Games','Passing_Touchdowns','Interceptions_Thrown','Rushing_Yards_Gained','Rushing_Touchdowns','Receptions','Recieving_Yards','Recieving_Touchdowns']] = data_important[['Passing_Yards','Games','Passing_Touchdowns','Interceptions_Thrown','Rushing_Yards_Gained','Rushing_Touchdowns','Receptions','Recieving_Yards','Recieving_Touchdowns']].apply(pd.to_numeric,axis = 1)
+    #begin the calculations (dear god why)
+    data_important['passing_yards_pts'] = data_important['Passing_Yards'] / 25
+    data_important['passing_touchdown_points'] = data_important['Passing_Touchdowns'] * 4
+    data_important['interception_points'] = data_important['Interceptions_Thrown'] * -2
+    data_important['rushing_yards_points'] =  data_important['Rushing_Yards_Gained'] / 10
+    data_important['rushing_touchdowns_points'] = data_important['Rushing_Touchdowns'] * 6
+    data_important['total_points'] = data_important[['passing_yards_pts','passing_touchdown_points','interception_points','rushing_yards_points','rushing_touchdowns_points']].sum(axis = 1)
+    data_important['weighted_value'] = (data_important['total_points']/data_important['Games']) - 1
+    fun_total_percent = data_important['total_points'].sum()
+    data_important['scalar_evaluation_value'] = data_important['total_points'] / fun_total_percent
+    main_users_team = st.sidebar.multiselect("Please enter your team",data_important['Player'].unique())
+    other_persons_team = st.sidebar.multiselect("Please enter the other players team (team you are comparing yours against)",data_important['Player'].unique())
+    main_users_team_df = data_important[data_important['Player'].isin(main_users_team)]
+    other_users_team_df = data_important[data_important['Player'].isin(other_persons_team)]
+
+   
+    #!TRADE    
+    football_compare_trade()
+    #!TRADE end
+
+    #!TEAM PRED.
+    football_testing_button_predict_winner()
+    
+    st.write(data_important)
+
+if sport == 'Golf':
+    st.header("Noone actually knows this 'sport'")
