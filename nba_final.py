@@ -91,6 +91,18 @@ def compare_trade():
             st.balloons()
         if(pts_for_give - pts_for_recieve) > 0:
             st.header("this is an unfavorable trade")
+def generate_best_picks():
+    top_2_in_position = pd.DataFrame()
+    top_in_pos_sorted = pd.DataFrame()
+    for position in filtered_arranged2['Pos'].unique():
+        top_2_in_position2 = (filtered_arranged2.loc[filtered_arranged2['Pos'] == position].head(n=10))
+        top_2_in_position = top_2_in_position.append(top_2_in_position2)
+        top_in_pos_sorted = top_2_in_position.sort_values(by = ['scalar_evaluation_value'],ascending = False)
+        top_in_pos_sorted.reset_index(inplace = True)
+        top_in_pos_sorted['Draft Priority'] = (top_in_pos_sorted.index) + 1
+
+    st.write(top_in_pos_sorted[['Player','Pos','Tm','Draft Priority']])
+
 def basketball_fantasy_points(dataframe):
   print(dataframe.head())
   dataframe = dataframe.dropna()
@@ -133,7 +145,8 @@ if sport == "Basketball":
     filtered_arranged2 = arranged[(arranged['Pos'].isin(positions)) & (arranged['G'] >= games_slider)]
     fun_total_percent = filtered_arranged2['total_points_count'].sum()
     filtered_arranged2['scalar_evaluation_value'] = filtered_arranged2['total_points_count'] / fun_total_percent
-
+    if st.sidebar.button("Generate draft picks"):
+        generate_best_picks()
     st.write(fun_total_percent)
     st.write(filtered_arranged2[['Player','G','Pos','Tm','fantasy_points','scalar_evaluation_value']])
 
@@ -166,6 +179,7 @@ if sport == "Basketball":
 
     compare_trade()
     testing_button_predict_winner()
+
    
 #individual_player = st.sidebar.multiselect("Enter a players stats to look at")
 
@@ -215,6 +229,7 @@ def football_testing_button_predict_winner():
         if your_team_points_estimate == challenger_team_points_estimate:
             st.header("Eh,")
             st.header("this is going to be a tie!")
+
 
 if sport == "Football":
     data = get_football_data()
