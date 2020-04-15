@@ -282,10 +282,6 @@ if sport == "Football":
 
 if sport == 'Golf':
     st.header("Noone actually knows this 'sport'")
-# if sport == 'Jared':
-#     st.header("Jared is a smelly boi who doesnt hit depth")
-# if sport == 'Massimo':
-#     st.header("Massimos failure to t spin is only matched by his failure to jack off in class. In short, he is a failure.")
 
 
 
