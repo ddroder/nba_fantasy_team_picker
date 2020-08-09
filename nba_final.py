@@ -12,6 +12,12 @@ import pandas as pd
 import streamlit as st
 @st.cache(suppress_st_warning=True)
 def get_basketball_data():
+    """
+    This function is the webscraper that ,when the user selects
+    the basketball portion of the website, scrapes the basketball
+    data from the URL specified
+    """
+
     # NBA season we will be analyzing
     year = 2020
     # URL page we will scraping 
@@ -64,8 +70,6 @@ def get_football_data():
     stats.head(10)
     stats.dropna(inplace = True)
     return stats
-def football_fantasy_points(dataframe):
-    dataframe["YDS"] = pd.to_numeric(dataframe['YDS'])
 
 def football_compare_trade():
     players_to_trade = st.sidebar.multiselect('Which players are you going to trade?', data_important['Player'].unique())
@@ -73,8 +77,6 @@ def football_compare_trade():
     players_to_trade_df = data_important[data_important['Player'].isin(players_to_trade)]
     players_to_recieve_df = data_important[data_important['Player'].isin(players_to_recieve)]
     new_df = data_important[(data_important['Player'].isin(players_to_trade)) | (data_important['Player'].isin(players_to_recieve))]
-
-
     #st.write(new_df[['Player','G','Pos','Tm','fantasy_points','scalar_evaluation_value']])
     pts_for_give = players_to_trade_df['scalar_evaluation_value'].sum()
     pts_for_recieve = players_to_recieve_df['scalar_evaluation_value'].sum()
@@ -193,10 +195,10 @@ def basketball_fantasy_points(dataframe):
 
 
 
-sport = st.sidebar.radio('What sport would you like to analyze?',('Basketball','Football','Golf'))
+sport = st.sidebar.radio('What sport would you like to analyze?',('Basketball','Football'))
 
 if sport == "Basketball":
-    games_slider=st.sidebar.slider('games played', 0,82,0)
+    games_slider=st.sidebar.slider('games played', 0,82,0) #to my knowledgte, 82 games in a season which is why 82 is cap
     fp_stats = basketball_fantasy_points(get_basketball_data())
     arranged = fp_stats.sort_values(by = ['fantasy_points'], ascending = False)
     filtered_arranged = arranged[arranged['G'] >= games_slider]
@@ -234,7 +236,6 @@ if sport == "Basketball":
     new_df = filtered_arranged2[(filtered_arranged2['Player'].isin(players_to_trade)) | (filtered_arranged2['Player'].isin(players_to_recieve))]
 
 
-    #st.write(new_df[['Player','G','Pos','Tm','fantasy_points','scalar_evaluation_value']])
     pts_for_give = players_to_trade_df['scalar_evaluation_value'].sum()
     pts_for_recieve = players_to_recieve_df['scalar_evaluation_value'].sum()
 
@@ -271,19 +272,14 @@ if sport == "Football":
     other_users_team_df = data_important[data_important['Player'].isin(other_persons_team)]
 
    
-    #!TRADE    
     if st.button("Generate Best Picks"):
         football_best_picks()
     football_compare_trade()
-    #!TRADE end
 
-    #!TEAM PRED.
     football_testing_button_predict_winner()
 
     st.write(data_important)
 
-if sport == 'Golf':
-    st.header("Noone actually knows this 'sport'")
 
 
 
