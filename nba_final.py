@@ -1,8 +1,16 @@
+"""
+Author: Daniel Droder
+This script when ran will create a webapp that
+allows the user to find information about who they should
+draft for their fantasy teams. 
+"""
+
+
 from urllib.request import urlopen
 from bs4 import BeautifulSoup
 import pandas as pd
 import streamlit as st
-@st.cache
+@st.cache(suppress_st_warning=True)
 def get_basketball_data():
     # NBA season we will be analyzing
     year = 2020
@@ -29,7 +37,7 @@ def get_basketball_data():
     stats.head(10)
     stats.dropna(inplace = True)
     return stats
-@st.cache
+@st.cache(suppress_st_warning=True)
 def get_football_data():
     # NFL season we will be analyzing
     year = 2019
@@ -202,7 +210,11 @@ if sport == "Basketball":
     fun_total_percent = filtered_arranged2['total_points_count'].sum()
     filtered_arranged2['scalar_evaluation_value'] = filtered_arranged2['total_points_count'] / fun_total_percent
     if st.button("Generate draft picks"):
-        generate_best_picks()
+        try:
+            generate_best_picks()
+        except:
+            st.text("Be sure you have selected positions that you want before generating picks!")
+            st.text("To do that, populate the dropdown located on the left hand side called 'Select Position'.")
     st.write(fun_total_percent)
     st.write(filtered_arranged2[['Player','G','Pos','Tm','fantasy_points','scalar_evaluation_value']])
 
@@ -235,16 +247,6 @@ if sport == "Basketball":
 
     compare_trade()
     testing_button_predict_winner()
-
-   
-#individual_player = st.sidebar.multiselect("Enter a players stats to look at")
-
-#if st.button("individual players"):
- #   selected_players =
-
-#?
-#?
-#?
 
 
 if sport == "Football":
